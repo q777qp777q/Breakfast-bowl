@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitness Tracker App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        header {
+            background-color: #28a745;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .user-selection {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .user-selection select {
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        #user-info {
+            text-align: center;
+            display: none;
+            margin-top: 20px;
+        }
+
+        section {
+            padding: 20px;
+            background-color: white;
+            margin: 20px auto;
+            max-width: 900px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group input {
+            padding: 10px;
+            width: 100%;
+            margin: 5px 0;
+            box-sizing: border-box;
+        }
+
+        .button {
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .button:hover {
+            background-color: #218838;
+        }
+
+        .tracker-list {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .tracker-list li {
+            background-color: #f9f9f9;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .leaderboard {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .leaderboard ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .leaderboard li {
+            background-color: #e9f7e9;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            text-align: left;
+        }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Fitness Tracker App</h1>
+</header>
+
+<!-- Dropdown for user selection -->
+<div class="user-selection">
+    <label for="user-name-select">Select Your Name: </label>
+    <select id="user-name-select" onchange="showUserInfo()">
+        <option value="" selected disabled>Select a user</option>
+        <option value="John Doe">John Doe</option>
+        <option value="Jane Smith">Jane Smith</option>
+        <option value="Michael Johnson">Michael Johnson</option>
+        <option value="Emily Davis">Emily Davis</option>
+    </select>
+</div>
+
+<!-- Display user info after selection -->
+<div id="user-info">
+    <h2>Welcome, <span id="user-name"></span></h2>
+    <p>You're now logged in to the Fitness Tracker App!</p>
+    <button onclick="showLeaderboard()">View Leaderboard</button>
+    <p><button onclick="logOut()">Log Out</button></p>
+</div>
+
+<!-- Workout Tracker Section -->
+<section id="workout-section" style="display:none;">
+    <h2>Workout Tracker</h2>
+    <div class="form-group">
+        <label for="workout-name">Exercise Name</label>
+        <input type="text" id="workout-name" placeholder="Exercise (e.g., Push-ups)">
+    </div>
+    <div class="form-group">
+        <label for="workout-sets">Sets</label>
+        <input type="number" id="workout-sets" placeholder="Number of sets">
+    </div>
+    <div class="form-group">
+        <label for="workout-reps">Reps per Set</label>
+        <input type="number" id="workout-reps" placeholder="Number of reps per set">
+    </div>
+    <button class="button" onclick="addWorkout()">Add Workout</button>
+
+    <h3>Workout Log</h3>
+    <ul class="tracker-list" id="workout-log"></ul>
+</section>
+
+<!-- Leaderboard Section -->
+<div id="leaderboard-section" class="leaderboard" style="display:none;">
+    <h2>Leaderboard</h2>
+    <ul id="leaderboard-list"></ul>
+    <button onclick="goBackToWorkout()">Back to Workouts</button>
+</div>
+
+<script>
+    let currentUser = '';
+
+    // Function to display user info when a name is selected
+    function showUserInfo() {
+        currentUser = document.getElementById('user-name-select').value;
+
+        if (currentUser) {
+            document.getElementById('user-name').textContent = currentUser;
+            document.getElementById('user-info').style.display = 'block';
+            document.querySelector('.user-selection').style.display = 'none';
+            document.getElementById('workout-section').style.display = 'block';
+            loadWorkouts();
+        }
+    }
+
+    // Function to log out the user (reset state)
+    function logOut() {
+        document.getElementById('user-info').style.display = 'none';
+        document.querySelector('.user-selection').style.display = 'flex';
+        document.getElementById('user-name-select').value = '';
+        document.getElementById('workout-section').style.display = 'none';
+        document.getElementById('leaderboard-section').style.display = 'none';
+        currentUser = '';
+    }
+
+    // Function to add workout
+    function addWorkout() {
+        const name = document.getElementById('workout-name').value;
+        const sets = document.getElementById('workout-sets').value;
+        const reps = document.getElementById('workout-reps').value;
+
+        if (name && sets && reps) {
+            // Create a workout object
+            const workout = { name, sets, reps };
+
+            // Get existing workouts from localStorage, or initialize as empty array
+            const workouts = JSON.parse(localStorage.getItem('workouts')) || [];
+            
+            // Check if workouts for the current user already exist
+            let userWorkouts = workouts.find(workout => workout.user === currentUser);
+            if (!userWorkouts) {
+                userWorkouts = { user: currentUser, workouts: [] };
+                workouts.push(userWorkouts);
+            }
+            userWorkouts.workouts.push(workout);
+
+            // Save the updated workout list back to localStorage
+            localStorage.setItem('workouts', JSON.stringify(workouts));
+
+            // Refresh the workout log display
+            loadWorkouts();
+        }
+
+        // Clear inputs
+        document.getElementById('workout-name').value = '';
+        document.getElementById('workout-sets').value = '';
+        document.getElementById('workout-reps').value = '';
+    }
+
+    // Load workouts from localStorage and display them
+    function loadWorkouts() {
+        const workouts = JSON.parse(localStorage.getItem('workouts')) || [];
+        const workoutLog = document.getElementById('workout-log');
+        workoutLog.innerHTML = '';
+
+        const userWorkouts = workouts.find(workout => workout.user === currentUser);
+
+        if (userWorkouts) {
+            userWorkouts.workouts.forEach(workout => {
+                const li = document.createElement('li');
+                li.textContent = `${workout.name}: ${workout.sets} sets of ${workout.reps} reps`;
+                workoutLog.appendChild(li);
+            });
+        }
+    }
+
+    // Show the leaderboard
+    function showLeaderboard() {
+        const workouts = JSON.parse(localStorage.getItem('workouts')) || [];
+        const leaderboardList = document.getElementById('leaderboard-list');
+        leaderboardList.innerHTML = '';
+
+        workouts.forEach(userWorkouts => {
+            const totalActivity = userWorkouts.workouts.reduce((total, workout) => {
+                return total + (workout.sets * workout.reps);
+            }, 0);
+
+            const li = document.createElement('li');
+            li.textContent = `${userWorkouts.user}: ${totalActivity} total reps`;
+            leaderboardList.appendChild(li);
+        });
+
+        document.getElementById('leaderboard-section').style.display = 'block';
+        document.getElementById('workout-section').style.display = 'none';
+    }
+
+    // Go back to workout section
+    function goBackToWorkout() {
+        document.getElementById('leaderboard-section').style.display = 'none';
+        document.getElementById('workout-section').style.display = 'block';
+    }
+
+    // Load workouts on page load
+    window.onload = function() {
+        if (currentUser) {
+            loadWorkouts();
+        }
+    };
+</script>
+
+</body>
+</html>
